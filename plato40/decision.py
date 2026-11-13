@@ -13,6 +13,19 @@ from .clock import iso
 
 PRIORITIES = ("critical", "high", "medium", "low")
 
+# Canonical issue types - use exactly these (eval/evaluate.py matches on them).
+ISSUE_TYPES = {
+    "room_turnaround",          # S01
+    "water_leak",               # S02
+    "heating_comfort",          # S03 (incl. heat pump degradation)
+    "ventilation_maintenance",  # S04
+    "occupancy_surge",          # S05
+    "energy_optimization",      # battery / load shifting
+    "logistics",                # waste, vending, robot bin runs
+    "guest_request",            # guest service not covered above
+    "data_quality",             # sensor / meter / gateway problems
+}
+
 ACTIONS = {
     "schedule_cleaning", "dispatch_robot", "adjust_room_setpoint", "optimize_energy",
     "block_room", "release_room", "reassign_room", "request_inspection",
@@ -112,6 +125,8 @@ def make_decision(*, t, affected_assets: list[str], issue_type: str, action: str
     """Build a Decision with autonomy flags derived from policy. event_id is assigned by DecisionLog."""
     if priority not in PRIORITIES:
         raise PolicyError(f"priority must be one of {PRIORITIES}")
+    if issue_type not in ISSUE_TYPES:
+        raise PolicyError(f"issue_type {issue_type!r} not canonical - use one of {sorted(ISSUE_TYPES)}")
     if not affected_assets:
         raise PolicyError("affected_assets must be non-empty")
     level = autonomy_level(action, enters_occupied_room=enters_occupied_room, notable_cost=notable_cost,

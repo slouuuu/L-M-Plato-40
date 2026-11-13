@@ -23,7 +23,7 @@ from collections import Counter, defaultdict
 import pandas as pd
 
 from plato40 import io
-from plato40.decision import (ALL_ACTIONS, APPROVAL_AND_CONSENT, AUTONOMOUS, PRIORITIES,
+from plato40.decision import (ALL_ACTIONS, APPROVAL_AND_CONSENT, AUTONOMOUS, ISSUE_TYPES, PRIORITIES,
                               autonomy_level)
 from plato40.state import State
 
@@ -85,6 +85,8 @@ def main(argv=None) -> int:
         unknown = [x for x in assets if x not in valid_ids]
         if unknown:
             violations.append(f"{eid}: unknown asset ids {unknown}")
+        if d.get("issue_type") not in ISSUE_TYPES:
+            warnings.append(f"{eid}: issue_type {d.get('issue_type')!r} not canonical (see decision.ISSUE_TYPES)")
         action = d.get("action")
         if action not in ALL_ACTIONS:
             warnings.append(f"{eid}: action {action!r} not in vocabulary - must be documented in README")

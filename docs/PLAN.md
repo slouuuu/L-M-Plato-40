@@ -1,43 +1,58 @@
-# Team plan
+# Project plan
 
-**Code freeze: Saturday 14:00** (dataset CHALLENGE.md; case book says 15:00 — confirm on Discord).
-Holdout release ~11:00 Saturday. Track demo 15:00–16:00.
+**Planner:** Claude (this repo's docs) · **Team:** Luca + teammate · **Implementation:** Devin agents, one ticket per session/PR.
+**Code freeze: Saturday 14 Nov, 14:00 Europe/Vienna** (see docs/DECISIONS.md D8). Holdout release ~11:00. Live demo 15:00.
 
-## Split
+## Status (Fri 13 Nov, evening)
+- ✅ Backbone: loader + cleaning, as-of views, state, autonomy policy, episodes, replay engine, CLI, validator
+- ✅ Data-quality agent (gateway outages, frozen sensors, implausible values, meter resets)
+- ✅ Evaluation harness (`eval/`), 25 tests, Docker, docs, tickets
+- ⬜ Scenario agents, messaging, viewer, insights, release
 
-| Person A — data & detection | Person B — operations & presentation |
-|---|---|
-| S02 water (`detectors/s02_water.py`) | S01 turnaround planner (`s01_turnaround.py`) |
-| S03 comfort / heat pump (`s03_comfort.py`) | Guest messages (template + optional LLM) |
-| S04 maintenance (`s04_maintenance.py`) | S05 surge (`s05_surge.py`) |
-| Energy / battery (`energy.py`) | Logistics (`logistics.py`) |
-| Numbers for `insights.md` | Viewer, `insights.md` text, video, pitch |
+Baseline: quickstart incidents detected **0/7**, dev weak-label incidents **0/40**, validator PASS.
 
-## Timeline
+## Ticket board
+| Ticket | Title | Lane | Prio | Depends | Wave |
+|---|---|---|---|---|---|
+| [T01](tasks/T01-water-leaks.md) | S02 water leaks (loud, subtle, gap) | A | P0 | — | 1 |
+| [T02](tasks/T02-heating-comfort.md) | S03 comfort + heat-pump model | A | P0 | — | 1 |
+| [T03](tasks/T03-maintenance-cascade.md) | S04 AHU filter cascade | A | P0 | — | 1 |
+| [T05](tasks/T05-turnaround-planner.md) | S01 turnaround + shared housekeeping planner | B | P0 | — | 1 |
+| [T09](tasks/T09-messaging.md) | Multilingual messages, time parsing, approval notes | B | P0 | — (stub exists) | 1 |
+| [T10](tasks/T10-viewer.md) | Streamlit demo viewer | C | P0 | — | 1 |
+| [T11](tasks/T11-insights.md) | Level 3 insights + target architecture | C | P0 | — | 1 |
+| [T06](tasks/T06-event-weekend.md) | S05 event weekend | B | P0 | T05 | 2 |
+| [T04](tasks/T04-guest-service.md) | Guest service agent | B | P1 | T09 | 2 |
+| [T07](tasks/T07-energy.md) | Energy / battery (simulated) | A | P1 | T02 optional | 2 |
+| [T08](tasks/T08-logistics.md) | Waste, vending, robot bin runs | B | P1 | T05 optional | 2 |
+| [T12](tasks/T12-bms-compare.md) | BMS vs ours + look-alikes | C | P1 | T01–T03 | 3 |
+| [T13](tasks/T13-release-holdout.md) | Release check + holdout runbook | R | P0 | — | 2 (re-run Sat 10:30) |
+| [T14](tasks/T14-pitch-video.md) | Pitch, demo script, video | C | P0 | T10, T11 | humans, Sat |
+| [T15](tasks/T15-submission-repo.md) | Submission logistics, Proximata org repo | R | P0 | — | humans, now |
 
-- until 18:30 — backbone (done: loader, as-of, state, policy, episodes, CLI, validator)
-- 18:30–01:00 — Level 1 (S01–S03) working on quickstart
-- 01:00–07:00 — Level 2 (S04, S05, energy, logistics), sleep in 3 h shifts
-- 07:00–10:30 — dev year run, tune false alarms, insights, viewer
-- 10:30 — tag `pre-holdout`, test from fresh clone
-- ~11:00 — holdout run unchanged, commit `decisions_holdout.jsonl`
-- 11:30–14:00 — README, video, submission
+**Parallelism:** Wave 1 tickets touch disjoint files → run up to 7 Devin sessions in parallel. Merge order inside a lane:
+T05 before T06; T09 before T04. Shared modules (`io/asof/state/decision/log/engine/validate`) change only with `[shared]` PRs.
 
-## Quickstart incident map (from work_orders.csv — hints, not official ground truth)
+## Timeline (Europe/Vienna)
+| When | Milestone | Gate |
+|---|---|---|
+| Fri 19:00 | Wave 1 started (T01, T02, T03, T05, T09, T10, T11) | — |
+| Fri 23:30 | **M1** Level 1 on quickstart: R104, R305, HP1 cold snap detected; S01 conflicts planned | evaluate ≥ 4/7, validate PASS |
+| Sat 03:00 | **M2** Wave 1 merged; wave 2 started (T06, T04, T07, T08, T13) | dev run < 60 s |
+| Sat 07:00 | **M3** Level 2 merged; dev weak-label recall reviewed; false alarms triaged | evaluate quickstart ≥ 6/7 |
+| Sat 09:30 | **M4** insights.md + viewer demo-ready; T12 | demo click-path works |
+| Sat 10:30 | **Freeze for holdout**: release_check, root `decisions.jsonl`, tag `pre-holdout` | all green |
+| Sat ~11:00 | Holdout run unchanged → `decisions_holdout.jsonl` | validate PASS |
+| Sat 11:30–13:30 | README final, video, submission, Proximata org repo | T14, T15 |
+| **Sat 14:00** | **Code freeze** | — |
+| Sat 15:00 | Live demo (track judging) | — |
 
-| Scenario | What to detect |
-|---|---|
-| S02 loud | R104 burst hose, 13 Jan (BMS WATER_NIGHT_FLOW on WM_MAIN 01:45) |
-| S02 subtle | R305 toilet fill valve running, fixed 25 Jan |
-| S03 | Cold snap 14–17 Jan (−13.6 °C), HP1 COP 2.8 → 1.6, lockout_high_pressure, refrigerant leak fixed 17 Jan, TECH_1 sick 15 Jan |
-| S04 | AHU1 filter_dp 92 → 165 Pa, gap 17–20 Jan, 256 Pa + airflow drop, TECH_1 vacation 19–23 Jan, filters replaced 23 Jan |
-| S05 | 25 arrivals 23 Jan, 20 on 26 Jan, CLEANER_1 sick 24 Jan (known 05:30) |
-| S01 | 37 early check-ins, 8 waiting guests, CLEANER_1 sick 8 + 17 Jan |
-| DQ | GW_F3 outage 11 Jan, R205 frozen sensor, R106 85 °C, WM_R403 exchange (WO dated 15 Jan, reset seen 18 Jan) |
+## Cut list (if behind at M3) — drop in this order
+1. T07 energy optimisation (drop entirely rather than fake it) · 2. T08 vending (keep waste) ·
+3. T12 BMS compare (use manual numbers) · 4. T04 generic request types (keep maintenance + consent).
+**Never cut:** S01–S03, validator, holdout run, insights (≥ 2 PLATO + 2 CLARA), viewer incident card.
 
-Dev year: 76 work orders → use as weak labels to measure detection rate (only as known after `created_utc`).
-
-## Rules we never break
-
-- No future data (use `ctx.asof`), missing ≠ zero, one episode per incident.
-- Approval/consent only via `make_decision` policy; `validate.py` must PASS before every push.
+## Human responsibilities
+- **Luca:** review/merge PRs lane A + release (T13, T15), Discord questions, server.
+- **Teammate:** review/merge lanes B + C, demo script & video (T14).
+- Both: sleep in 3 h shifts; one person awake to review Devin PRs.

@@ -20,7 +20,13 @@ python run.py <data_dir> --out decisions.jsonl
 python validate.py decisions.jsonl <data_dir>      # contract + safety check
 ```
 
-`<data_dir>` is a dataset folder containing `manifest.json` (or its parent).
+`<data_dir>` is a dataset folder containing `manifest.json` (or its parent). The datasets are in the repo:
+
+```bash
+python run.py data/dev --out decisions.jsonl            # deliverable (365 days, ~10 s)
+python run.py data/quickstart --out out/qs.jsonl        # development (21 days, ~1 s)
+```
+
 No API key needed — the pipeline is fully deterministic and offline.
 
 With Docker:
@@ -30,23 +36,31 @@ docker build -t plato40 .
 docker run --rm -v "$PWD/data:/data" plato40 /data/dev --out /data/out/decisions.jsonl
 ```
 
-## Data
-
-Datasets are not committed (prefer loading via script). Put the organiser zip into `data/`:
+## Develop
 
 ```bash
-scripts/unpack_data.sh path/to/Hackathon.zip     # -> data/quickstart, data/dev
+pip install -r requirements-dev.txt
+python -m pytest -q                                                   # tests
+python eval/evaluate.py out/qs.jsonl --labels eval/labels_quickstart.json  # detection vs hand labels
+python eval/evaluate.py decisions.jsonl --data data/dev               # weak labels from work orders/events
 ```
 
-Holdout (released ~11:00 Saturday on Discord):
+Documentation for the team and coding agents: [`AGENTS.md`](AGENTS.md) ·
+[task brief](docs/TASK.md) · [data guide](docs/DATA.md) · [architecture](docs/ARCHITECTURE.md) ·
+[plan & ticket board](docs/PLAN.md) · [decisions](docs/DECISIONS.md) · [tickets](docs/tasks/) · [Devin guide](docs/DEVIN.md).
+
+## Holdout (Saturday ~11:00)
 
 ```bash
 git tag pre-holdout && git push origin pre-holdout          # BEFORE the release
-7z x -p'<password>' PLATO40_v2_holdout_encrypted.7z -odata/holdout_raw
-python run.py data/holdout_raw --out decisions_holdout.jsonl  # code unchanged
-python validate.py decisions_holdout.jsonl data/holdout_raw
+7z x -p'<password>' data/raw/PLATO40_v2_holdout_encrypted.7z -odata/holdout
+python run.py data/holdout --out decisions_holdout.jsonl     # code unchanged
+python validate.py decisions_holdout.jsonl data/holdout
 git add decisions_holdout.jsonl && git commit -m "Holdout run" && git push
 ```
+
+### Changes after pre-holdout
+_None yet. Any change after the tag must be justified here._
 
 ## Architecture
 
@@ -109,6 +123,9 @@ Extra actions (beyond the vocabulary): `water_shutoff` (approval + consent),
 `call_oncall_housekeeper` (approval, notable cost).
 
 ## Data cleaning assumptions
+
+Data: `data/` (CC BY 4.0, see `data/README.md`). Never concatenate quickstart and dev.
+
 
 - Empty = missing, never zero. Telemetry gaps ≥ 2 h are flagged; ≥ 3 rooms on one floor → gateway episode.
 - Implausible values → NaN (temperature outside −5…45 °C, humidity 0…100 %, CO₂ 250…10 000 ppm).
